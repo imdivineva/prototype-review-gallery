@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review Gallery</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Password gate -->
+  <div id="gate" class="gate">
+    <form id="gate-form" class="gate-card">
+      <h1>Review Gallery</h1>
+      <p>Enter the access code to continue.</p>
+      <input id="gate-input" type="password" placeholder="Access code" autocomplete="current-password" required>
+      <button type="submit">Enter</button>
+      <p id="gate-error" class="gate-error" hidden>Incorrect code, try again.</p>
+    </form>
+  </div>
+
+  <!-- Main app -->
+  <div id="app" class="app" hidden>
+    <header class="topbar">
+      <h1>Review Gallery</h1>
+      <div class="topbar-controls">
+        <select id="project-select"></select>
+        <button id="new-project-btn" class="btn-ghost" title="Create a new project">+ Project</button>
+        <button id="upload-btn" class="btn-primary">Upload screenshot</button>
+      </div>
+    </header>
+
+    <main id="grid" class="grid"></main>
+    <p id="empty-state" class="empty-state" hidden>No screenshots yet for this project. Upload the first one.</p>
+  </div>
+
+  <!-- Upload modal -->
+  <div id="upload-modal" class="modal" hidden>
+    <div class="modal-card">
+      <button class="modal-close" data-close="upload-modal">&times;</button>
+      <h2>Upload screenshot</h2>
+      <form id="upload-form">
+        <label>Project
+          <select id="upload-project-select"></select>
+        </label>
+        <label>Screenshot(s)
+          <input id="upload-files" type="file" accept="image/*" multiple required>
+        </label>
+        <label>Caption (optional)
+          <input id="upload-caption" type="text" maxlength="200" placeholder="e.g. Draft B — homepage v2">
+        </label>
+        <button type="submit" class="btn-primary">Upload</button>
+        <p id="upload-status" class="upload-status"></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- New project modal -->
+  <div id="project-modal" class="modal" hidden>
+    <div class="modal-card">
+      <button class="modal-close" data-close="project-modal">&times;</button>
+      <h2>New project</h2>
+      <form id="project-form">
+        <label>Project name
+          <input id="project-name-input" type="text" maxlength="80" required placeholder="e.g. OBX Field Guide">
+        </label>
+        <button type="submit" class="btn-primary">Create</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="modal" hidden>
+    <div class="modal-card lightbox-card">
+      <button class="modal-close" data-close="lightbox">&times;</button>
+      <img id="lightbox-img" src="" alt="Screenshot">
+      <p id="lightbox-caption" class="lightbox-caption"></p>
+      <div class="reactions">
+        <button id="like-btn" class="react-btn">👍 <span id="like-count">0</span></button>
+        <button id="dislike-btn" class="react-btn">👎 <span id="dislike-count">0</span></button>
+      </div>
+      <div class="comments">
+        <h3>Comments</h3>
+        <div id="comment-list" class="comment-list"></div>
+        <form id="comment-form">
+          <input id="comment-author" type="text" maxlength="60" placeholder="Your name (optional)">
+          <textarea id="comment-text" maxlength="1000" placeholder="Leave a comment..." required></textarea>
+          <button type="submit" class="btn-primary">Post comment</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
