@@ -61,6 +61,7 @@ input, select, textarea {
   background: var(--bg);
   z-index: 100;
 }
+.gate[hidden] { display: none; }
 .gate-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -163,6 +164,7 @@ input, select, textarea {
   z-index: 200;
   padding: 1em;
 }
+.modal[hidden] { display: none; }
 .modal-card {
   background: var(--surface);
   border-radius: 12px;
