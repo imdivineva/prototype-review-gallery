@@ -147,19 +147,33 @@ function watchGrid() {
   if (unsubscribeGrid) unsubscribeGrid();
   if (!currentProjectId) return;
 
+  // No orderBy here on purpose: combining where() + orderBy() on different
+  // fields needs a Firestore composite index. Sorting client-side avoids
+  // that manual setup step entirely.
   const q = query(
     collection(db, "screenshots"),
-    where("projectId", "==", currentProjectId),
-    orderBy("uploadedAt", "desc")
+    where("projectId", "==", currentProjectId)
   );
 
-  unsubscribeGrid = onSnapshot(q, (snap) => {
-    grid.innerHTML = "";
-    emptyState.hidden = !snap.empty;
-    snap.forEach((docSnap) => {
-      grid.appendChild(renderCard(docSnap.id, docSnap.data()));
-    });
-  });
+  unsubscribeGrid = onSnapshot(
+    q,
+    (snap) => {
+      grid.innerHTML = "";
+      emptyState.hidden = !snap.empty;
+      const docs = snap.docs.slice().sort((a, b) => {
+        const aTime = a.data().uploadedAt ? a.data().uploadedAt.toMillis() : 0;
+        const bTime = b.data().uploadedAt ? b.data().uploadedAt.toMillis() : 0;
+        return bTime - aTime;
+      });
+      docs.forEach((docSnap) => {
+        grid.appendChild(renderCard(docSnap.id, docSnap.data()));
+      });
+    },
+    (err) => {
+      console.error("Grid listener failed", err);
+      alert("Could not load screenshots. Check the console for details.");
+    }
+  );
 }
 
 function renderCard(id, data) {
