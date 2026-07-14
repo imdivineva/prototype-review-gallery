@@ -30,7 +30,7 @@
       </div>
     </header>
 
-    <main id="grid" class="grid"></main>
+    <main id="sections"></main>
     <p id="empty-state" class="empty-state" hidden>No screenshots yet for this project. Upload the first one.</p>
   </div>
 
@@ -42,6 +42,10 @@
       <form id="upload-form">
         <label>Project
           <select id="upload-project-select"></select>
+        </label>
+        <label>Group
+          <input id="upload-group" type="text" maxlength="80" placeholder="e.g. Version 2, Homepage, Draft C">
+          <span class="field-hint">Screenshots with the same group are shown together. Leave blank to skip grouping.</span>
         </label>
         <label>Screenshot(s)
           <input id="upload-files" type="file" accept="image/*" multiple required>

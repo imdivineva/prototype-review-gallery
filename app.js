@@ -27,11 +27,12 @@ const projectSelect = document.getElementById("project-select");
 const uploadProjectSelect = document.getElementById("upload-project-select");
 const newProjectBtn = document.getElementById("new-project-btn");
 const uploadBtn = document.getElementById("upload-btn");
-const grid = document.getElementById("grid");
+const sectionsEl = document.getElementById("sections");
 const emptyState = document.getElementById("empty-state");
 
 const uploadModal = document.getElementById("upload-modal");
 const uploadForm = document.getElementById("upload-form");
+const uploadGroup = document.getElementById("upload-group");
 const uploadFiles = document.getElementById("upload-files");
 const uploadCaption = document.getElementById("upload-caption");
 const uploadStatus = document.getElementById("upload-status");
@@ -158,22 +159,53 @@ function watchGrid() {
   unsubscribeGrid = onSnapshot(
     q,
     (snap) => {
-      grid.innerHTML = "";
       emptyState.hidden = !snap.empty;
       const docs = snap.docs.slice().sort((a, b) => {
         const aTime = a.data().uploadedAt ? a.data().uploadedAt.toMillis() : 0;
         const bTime = b.data().uploadedAt ? b.data().uploadedAt.toMillis() : 0;
         return bTime - aTime;
       });
-      docs.forEach((docSnap) => {
-        grid.appendChild(renderCard(docSnap.id, docSnap.data()));
-      });
+      renderSections(docs);
     },
     (err) => {
       console.error("Grid listener failed", err);
       alert("Could not load screenshots. Check the console for details.");
     }
   );
+}
+
+function renderSections(docs) {
+  // docs arrive sorted newest-first, so the first doc seen for each group
+  // key is that group's most recent upload — Map insertion order then
+  // naturally puts the most recently active group first. "Ungrouped"
+  // always sorts last regardless of recency.
+  const groups = new Map();
+  docs.forEach((docSnap) => {
+    const data = docSnap.data();
+    const key = data.group && data.group.trim() ? data.group.trim() : "Ungrouped";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ id: docSnap.id, data });
+  });
+
+  const ordered = [...groups.keys()].filter((k) => k !== "Ungrouped");
+  if (groups.has("Ungrouped")) ordered.push("Ungrouped");
+
+  sectionsEl.innerHTML = "";
+  ordered.forEach((key) => {
+    const items = groups.get(key);
+    const section = document.createElement("div");
+    section.className = "section" + (key === "Ungrouped" ? " section-ungrouped" : "");
+    section.innerHTML = `
+      <div class="section-head">
+        <h2>${escapeHtml(key)}</h2>
+        <span class="section-count">${items.length} screenshot${items.length === 1 ? "" : "s"}</span>
+      </div>
+      <div class="grid"></div>
+    `;
+    const grid = section.querySelector(".grid");
+    items.forEach(({ id, data }) => grid.appendChild(renderCard(id, data)));
+    sectionsEl.appendChild(section);
+  });
 }
 
 function renderCard(id, data) {
@@ -213,6 +245,7 @@ uploadBtn.addEventListener("click", () => {
 uploadForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const projectId = uploadProjectSelect.value;
+  const group = uploadGroup.value.trim();
   const files = Array.from(uploadFiles.files);
   const caption = uploadCaption.value.trim();
   if (!projectId || files.length === 0) return;
@@ -226,6 +259,7 @@ uploadForm.addEventListener("submit", async (e) => {
 
       await addDoc(collection(db, "screenshots"), {
         projectId,
+        group,
         imageUrl,
         cloudinaryPublicId: publicId,
         caption,
