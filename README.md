@@ -86,7 +86,8 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null;
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'dislikes']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'dislikes', 'group', 'caption']);
+      allow delete: if request.auth != null;
 
       match /comments/{commentId} {
         allow read: if true;
@@ -137,8 +138,14 @@ Enter your access code, create a project, and upload a test screenshot.
   anyone who views the page source. It's meant to keep casual/drive-by
   visitors out, not to protect sensitive data. Don't upload anything
   confidential.
-- Anyone with the code can upload, react, and comment — there's no separate
-  admin role. That matches what was asked for (one shared code for everyone).
+- Anyone with the code can upload, react, comment, edit, and **delete**
+  screenshots — there's no separate admin role. That matches what was asked
+  for (one shared code for everyone), but be aware anyone you share the link
+  with can permanently remove a screenshot.
+- Deleting a screenshot removes its Firestore entry, but the underlying image
+  file stays on Cloudinary (deleting it there requires a private API secret
+  that intentionally isn't exposed to the browser). Harmless clutter, not a
+  functional issue — Cloudinary's free tier has plenty of room.
 - The `likes`/`dislikes` counters are updated by the client directly; the
   Firestore rules only check that an update touches just those two fields,
   not that the math is correct. Good enough for an internal review tool; not

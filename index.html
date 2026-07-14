@@ -82,6 +82,8 @@
       <div class="reactions">
         <button id="like-btn" class="react-btn">👍 <span id="like-count">0</span></button>
         <button id="dislike-btn" class="react-btn">👎 <span id="dislike-count">0</span></button>
+        <button id="edit-btn" class="btn-ghost" type="button">Edit</button>
+        <button id="delete-btn" class="btn-ghost btn-danger" type="button">Delete</button>
       </div>
       <div class="comments">
         <h3>Comments</h3>
@@ -92,6 +94,23 @@
           <button type="submit" class="btn-primary">Post comment</button>
         </form>
       </div>
+    </div>
+  </div>
+
+  <!-- Edit modal -->
+  <div id="edit-modal" class="modal" hidden>
+    <div class="modal-card">
+      <button class="modal-close" data-close="edit-modal">&times;</button>
+      <h2>Edit screenshot</h2>
+      <form id="edit-form">
+        <label>Group
+          <input id="edit-group" type="text" maxlength="80" placeholder="e.g. Version 2, Homepage, Draft C">
+        </label>
+        <label>Caption
+          <input id="edit-caption" type="text" maxlength="200" placeholder="e.g. Draft B — homepage v2">
+        </label>
+        <button type="submit" class="btn-primary">Save changes</button>
+      </form>
     </div>
   </div>
 

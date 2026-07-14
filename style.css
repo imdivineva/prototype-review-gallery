@@ -108,6 +108,8 @@ input, select, textarea {
   color: var(--text);
 }
 .btn-ghost:hover { border-color: var(--accent); }
+.btn-ghost.btn-danger { color: var(--dislike); }
+.btn-ghost.btn-danger:hover { border-color: var(--dislike); }
 
 #sections {
   padding: 0.5em 1.5em 2em;

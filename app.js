@@ -6,8 +6,8 @@ import {
   getAuth, signInAnonymously, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, doc, addDoc,
-  getDoc, getDocs, query, where, orderBy, onSnapshot, serverTimestamp,
+  getFirestore, collection, doc, addDoc, deleteDoc, updateDoc,
+  getDoc, getDocs, getCountFromServer, query, where, orderBy, onSnapshot, serverTimestamp,
   runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -52,9 +52,17 @@ const commentList = document.getElementById("comment-list");
 const commentForm = document.getElementById("comment-form");
 const commentAuthor = document.getElementById("comment-author");
 const commentText = document.getElementById("comment-text");
+const editBtn = document.getElementById("edit-btn");
+const deleteBtn = document.getElementById("delete-btn");
+
+const editModal = document.getElementById("edit-modal");
+const editForm = document.getElementById("edit-form");
+const editGroup = document.getElementById("edit-group");
+const editCaption = document.getElementById("edit-caption");
 
 let currentProjectId = null;
 let currentScreenshotId = null;
+let currentScreenshotData = null;
 let unsubscribeGrid = null;
 let unsubscribeComments = null;
 
@@ -218,10 +226,23 @@ function renderCard(id, data) {
       <div class="card-meta">
         <span>👍 ${data.likes || 0}</span>
         <span>👎 ${data.dislikes || 0}</span>
+        <span class="comment-badge" hidden></span>
       </div>
     </div>
   `;
   card.addEventListener("click", () => openLightbox(id, data));
+
+  const badge = card.querySelector(".comment-badge");
+  getCountFromServer(collection(db, "screenshots", id, "comments"))
+    .then((snap) => {
+      const count = snap.data().count;
+      if (count > 0) {
+        badge.textContent = `💬 ${count}`;
+        badge.hidden = false;
+      }
+    })
+    .catch((err) => console.error("Comment count failed", err));
+
   return card;
 }
 
@@ -308,6 +329,7 @@ async function uploadToCloudinary(file) {
 
 async function openLightbox(id, data) {
   currentScreenshotId = id;
+  currentScreenshotData = data;
   lightboxImg.src = data.imageUrl;
   lightboxCaption.textContent = data.caption || "";
   likeCount.textContent = data.likes || 0;
@@ -405,6 +427,34 @@ commentForm.addEventListener("submit", async (e) => {
   });
 
   commentText.value = "";
+});
+
+// ---------- Edit / delete ----------
+
+editBtn.addEventListener("click", () => {
+  editGroup.value = currentScreenshotData.group || "";
+  editCaption.value = currentScreenshotData.caption || "";
+  openModal(editModal);
+});
+
+editForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const group = editGroup.value.trim();
+  const caption = editCaption.value.trim();
+
+  await updateDoc(doc(db, "screenshots", currentScreenshotId), { group, caption });
+
+  currentScreenshotData = { ...currentScreenshotData, group, caption };
+  lightboxCaption.textContent = caption;
+  closeModal(editModal);
+});
+
+deleteBtn.addEventListener("click", async () => {
+  const ok = confirm("Delete this screenshot? This can't be undone.");
+  if (!ok) return;
+
+  await deleteDoc(doc(db, "screenshots", currentScreenshotId));
+  closeModal(lightbox);
 });
 
 // ---------- Modal helpers ----------
