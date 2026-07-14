@@ -151,6 +151,6 @@ Enter your access code, create a project, and upload a test screenshot.
 ## Data model (Firestore)
 
 - `projects/{id}` — `{ name, createdAt }`
-- `screenshots/{id}` — `{ projectId, imageUrl, cloudinaryPublicId, caption, likes, dislikes, uploadedAt }`
+- `screenshots/{id}` — `{ projectId, group, imageUrl, cloudinaryPublicId, caption, likes, dislikes, uploadedAt }`
 - `screenshots/{id}/comments/{id}` — `{ text, author, createdAt }`
 - `screenshots/{id}/reactions/{uid}` — `{ type: "like" | "dislike", updatedAt }`
