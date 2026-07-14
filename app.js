@@ -442,19 +442,28 @@ editForm.addEventListener("submit", async (e) => {
   const group = editGroup.value.trim();
   const caption = editCaption.value.trim();
 
-  await updateDoc(doc(db, "screenshots", currentScreenshotId), { group, caption });
-
-  currentScreenshotData = { ...currentScreenshotData, group, caption };
-  lightboxCaption.textContent = caption;
-  closeModal(editModal);
+  try {
+    await updateDoc(doc(db, "screenshots", currentScreenshotId), { group, caption });
+    currentScreenshotData = { ...currentScreenshotData, group, caption };
+    lightboxCaption.textContent = caption;
+    closeModal(editModal);
+  } catch (err) {
+    console.error("Edit failed", err);
+    alert("Could not save changes. This usually means the Firestore security rules haven't been updated to allow edits yet — see the README.");
+  }
 });
 
 deleteBtn.addEventListener("click", async () => {
   const ok = confirm("Delete this screenshot? This can't be undone.");
   if (!ok) return;
 
-  await deleteDoc(doc(db, "screenshots", currentScreenshotId));
-  closeModal(lightbox);
+  try {
+    await deleteDoc(doc(db, "screenshots", currentScreenshotId));
+    closeModal(lightbox);
+  } catch (err) {
+    console.error("Delete failed", err);
+    alert("Could not delete this screenshot. This usually means the Firestore security rules haven't been updated to allow deletes yet — see the README.");
+  }
 });
 
 // ---------- Modal helpers ----------
