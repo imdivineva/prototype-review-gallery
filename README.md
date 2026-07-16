@@ -86,7 +86,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null;
       allow update: if request.auth != null
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'dislikes', 'group', 'caption']);
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'dislikes', 'group', 'caption', 'order']);
       allow delete: if request.auth != null;
 
       match /comments/{commentId} {
@@ -158,6 +158,6 @@ Enter your access code, create a project, and upload a test screenshot.
 ## Data model (Firestore)
 
 - `projects/{id}` — `{ name, createdAt }`
-- `screenshots/{id}` — `{ projectId, group, imageUrl, cloudinaryPublicId, caption, likes, dislikes, uploadedAt }`
+- `screenshots/{id}` — `{ projectId, group, order, imageUrl, cloudinaryPublicId, caption, likes, dislikes, uploadedAt }`
 - `screenshots/{id}/comments/{id}` — `{ text, author, createdAt }`
 - `screenshots/{id}/reactions/{uid}` — `{ type: "like" | "dislike", updatedAt }`

@@ -168,11 +168,7 @@ function watchGrid() {
     q,
     (snap) => {
       emptyState.hidden = !snap.empty;
-      const docs = snap.docs.slice().sort((a, b) => {
-        const aTime = a.data().uploadedAt ? a.data().uploadedAt.toMillis() : 0;
-        const bTime = b.data().uploadedAt ? b.data().uploadedAt.toMillis() : 0;
-        return bTime - aTime;
-      });
+      const docs = snap.docs.slice().sort((a, b) => orderOf(b.data()) - orderOf(a.data()));
       renderSections(docs);
     },
     (err) => {
@@ -180,6 +176,19 @@ function watchGrid() {
       alert("Could not load screenshots. Check the console for details.");
     }
   );
+}
+
+// Higher order = shown earlier. New uploads get Date.now() so they default
+// to newest-first; dragging a card assigns it a value between its new
+// neighbors' order values so it holds a manually-chosen position. Docs from
+// before this feature existed have no order field, so fall back to their
+// upload time.
+function orderOf(data) {
+  return typeof data.order === "number"
+    ? data.order
+    : data.uploadedAt
+    ? data.uploadedAt.toMillis()
+    : 0;
 }
 
 function renderSections(docs) {
@@ -212,15 +221,75 @@ function renderSections(docs) {
     `;
     const grid = section.querySelector(".grid");
     items.forEach(({ id, data }) => grid.appendChild(renderCard(id, data)));
+    wireDropTarget(grid, key);
     sectionsEl.appendChild(section);
   });
+}
+
+// ---------- Drag-and-drop reordering ----------
+
+function wireDropTarget(grid, groupKey) {
+  grid.addEventListener("dragover", (e) => {
+    const dragging = document.querySelector(".card.dragging");
+    if (!dragging) return;
+    e.preventDefault();
+    const afterElement = getDragAfterElement(grid, e.clientY);
+    if (afterElement == null) {
+      grid.appendChild(dragging);
+    } else {
+      grid.insertBefore(dragging, afterElement);
+    }
+  });
+
+  grid.addEventListener("drop", (e) => {
+    e.preventDefault();
+    const dragging = document.querySelector(".card.dragging");
+    if (!dragging) return;
+
+    const id = dragging.dataset.screenshotId;
+    const prev = dragging.previousElementSibling;
+    const next = dragging.nextElementSibling;
+    const prevOrder = prev ? Number(prev.dataset.order) : null;
+    const nextOrder = next ? Number(next.dataset.order) : null;
+
+    let newOrder;
+    if (prevOrder == null && nextOrder == null) newOrder = Date.now();
+    else if (prevOrder == null) newOrder = nextOrder + 1000;
+    else if (nextOrder == null) newOrder = prevOrder - 1000;
+    else newOrder = (prevOrder + nextOrder) / 2;
+
+    const group = groupKey === "Ungrouped" ? "" : groupKey;
+
+    updateDoc(doc(db, "screenshots", id), { order: newOrder, group }).catch((err) => {
+      console.error("Reorder failed", err);
+      alert("Could not save the new order. Check the console for details.");
+    });
+  });
+}
+
+function getDragAfterElement(grid, y) {
+  const cards = [...grid.querySelectorAll(".card:not(.dragging)")];
+  return cards.reduce(
+    (closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset, element: child };
+      }
+      return closest;
+    },
+    { offset: Number.NEGATIVE_INFINITY, element: null }
+  ).element;
 }
 
 function renderCard(id, data) {
   const card = document.createElement("div");
   card.className = "card";
+  card.draggable = true;
+  card.dataset.screenshotId = id;
+  card.dataset.order = orderOf(data);
   card.innerHTML = `
-    <img src="${data.imageUrl}" alt="${escapeHtml(data.caption || "Screenshot")}" loading="lazy">
+    <img src="${data.imageUrl}" alt="${escapeHtml(data.caption || "Screenshot")}" loading="lazy" draggable="false">
     <div class="card-body">
       <div class="card-caption">${escapeHtml(data.caption || "")}</div>
       <div class="card-meta">
@@ -231,6 +300,8 @@ function renderCard(id, data) {
     </div>
   `;
   card.addEventListener("click", () => openLightbox(id, data));
+  card.addEventListener("dragstart", () => card.classList.add("dragging"));
+  card.addEventListener("dragend", () => card.classList.remove("dragging"));
 
   const badge = card.querySelector(".comment-badge");
   getCountFromServer(collection(db, "screenshots", id, "comments"))
@@ -281,6 +352,7 @@ uploadForm.addEventListener("submit", async (e) => {
       await addDoc(collection(db, "screenshots"), {
         projectId,
         group,
+        order: Date.now(),
         imageUrl,
         cloudinaryPublicId: publicId,
         caption,
