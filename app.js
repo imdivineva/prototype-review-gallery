@@ -472,18 +472,70 @@ function watchComments(screenshotId) {
   unsubscribeComments = onSnapshot(q, (snap) => {
     commentList.innerHTML = "";
     snap.forEach((docSnap) => {
-      const data = docSnap.data();
-      const el = document.createElement("div");
-      el.className = "comment";
-      const time = data.createdAt ? data.createdAt.toDate().toLocaleString() : "";
-      el.innerHTML = `
-        <span class="comment-author">${escapeHtml(data.author || "Anonymous")}</span>
-        <span class="comment-time">${time}</span>
-        <p class="comment-text">${escapeHtml(data.text)}</p>
-      `;
-      commentList.appendChild(el);
+      commentList.appendChild(renderComment(screenshotId, docSnap.id, docSnap.data()));
     });
     commentList.scrollTop = commentList.scrollHeight;
+  });
+}
+
+function renderComment(screenshotId, commentId, data) {
+  const el = document.createElement("div");
+  el.className = "comment";
+  showCommentView(el, screenshotId, commentId, data);
+  return el;
+}
+
+function showCommentView(el, screenshotId, commentId, data) {
+  const time = data.createdAt ? data.createdAt.toDate().toLocaleString() : "";
+  const edited = data.editedAt ? " (edited)" : "";
+  el.innerHTML = `
+    <span class="comment-author">${escapeHtml(data.author || "Anonymous")}</span>
+    <span class="comment-time">${time}${edited}</span>
+    <p class="comment-text">${escapeHtml(data.text)}</p>
+    <div class="comment-actions">
+      <button type="button" class="comment-action-btn" data-action="edit">Edit</button>
+      <button type="button" class="comment-action-btn comment-action-danger" data-action="delete">Delete</button>
+    </div>
+  `;
+  el.querySelector('[data-action="edit"]').addEventListener("click", () => {
+    showCommentEdit(el, screenshotId, commentId, data);
+  });
+  el.querySelector('[data-action="delete"]').addEventListener("click", async () => {
+    const ok = confirm("Delete this comment? This can't be undone.");
+    if (!ok) return;
+    try {
+      await deleteDoc(doc(db, "screenshots", screenshotId, "comments", commentId));
+    } catch (err) {
+      console.error("Delete comment failed", err);
+      alert("Could not delete the comment. Check the console for details.");
+    }
+  });
+}
+
+function showCommentEdit(el, screenshotId, commentId, data) {
+  el.innerHTML = `
+    <span class="comment-author">${escapeHtml(data.author || "Anonymous")}</span>
+    <textarea class="comment-edit-text" maxlength="1000">${escapeHtml(data.text)}</textarea>
+    <div class="comment-actions">
+      <button type="button" class="comment-action-btn" data-action="save">Save</button>
+      <button type="button" class="comment-action-btn" data-action="cancel">Cancel</button>
+    </div>
+  `;
+  el.querySelector('[data-action="cancel"]').addEventListener("click", () => {
+    showCommentView(el, screenshotId, commentId, data);
+  });
+  el.querySelector('[data-action="save"]').addEventListener("click", async () => {
+    const newText = el.querySelector(".comment-edit-text").value.trim();
+    if (!newText) return;
+    try {
+      await updateDoc(doc(db, "screenshots", screenshotId, "comments", commentId), {
+        text: newText,
+        editedAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Edit comment failed", err);
+      alert("Could not save the comment. Check the console for details.");
+    }
   });
 }
 
